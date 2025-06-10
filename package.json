@@ -1,11 +1,11 @@
 {
   "name": "vite-plugin-cache",
   "version": "1.0.0",
-  "author": "твоё имя или ник",
+  "author": "alex5",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/твой-ник/vite-plugin-cache.git"
+    "url": ""
   },
   "keywords": [
     "vite",
