@@ -34,8 +34,8 @@ export function vitePluginCache(
       if (!basePath.endsWith("/")) basePath += "/";
     },
 
-    async generateBundle() {
-      await generateSW({
+    async closeBundle() {
+      const { count, size, warnings } = await generateSW({
         swDest,
         globDirectory: outDir,
         globPatterns: options.globPatterns,
@@ -70,6 +70,15 @@ export function vitePluginCache(
         skipWaiting: true,
         clientsClaim: true,
       });
+
+      console.log(
+        "📦 Cached files:",
+        count,
+        "Size:",
+        size,
+        "Warnings:",
+        warnings
+      );
     },
 
     transformIndexHtml: {
