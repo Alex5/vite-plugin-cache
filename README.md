@@ -5,9 +5,10 @@
 ## 📦 Features
 
 - ✅ Caches JS, CSS, HTML, images, fonts, etc. by default
-- 🔄 Supports stale-while-revalidate caching strategy
-- ⚙️ Auto-registers the service worker in your `index.html`
-- 🧩 Compatible with `base` path in Vite config
+- 🔄 Stale-While-Revalidate strategy for all routes
+- ⚙️ Auto-registers the service worker in `index.html`
+- 🌐 Optional API proxying (for cross origin requests)
+- 🧩 Respects Vite `base` path
 - 🧼 Simple API, minimal config
 
 ---
@@ -36,35 +37,31 @@ vitePluginCache({
   swFileName: 'my-sw.js', // Default: vite-cache-service-worker.js
   globPatterns: ['**/*.{js,css,html,svg}'], // Files to precache
   navigateFallback: '/index.html', // SPA fallback route
+  apiUrlPatter: /^https:\/\/[^/]+\/api\// // Match pattern for API caching
+  apiProxy: {
+    prefix: '/api/'
+    target: 'https://yourbackend.com'
+  } // Rewrites origin-relative API requests to remote target
 });
 ```
 
-## What gets cached?
+## 🌍 What gets cached?
 
 ```text
 **/*.{js,css,html,svg,png,jpg,jpeg,woff2}
 ```
+All other requests (including API) are handled via runtime caching using the StaleWhileRevalidate strategy.
 
-##  How it works
+##  🔁 How API proxy works
 
-```
-At build time, the plugin runs workbox-build.generateSW and generates a service worker in outDir (e.g. dist/service-worker.js).
+If you configure the apiProxy, all fetch requests that start with the given prefix (e.g. /api/) will be rewritten inside the Service Worker to the target host (e.g. https://api.example.com/api/).
 
-It injects the service worker registration script into your final index.html.
-
-No manual setup needed.
-```
+This is useful when deploying to static hosts (e.g. GitHub Pages) that can't proxy backend requests themselves.
 
 ## Tips
-```
-Ensure your API responses are cacheable (Cache-Control, no Set-Cookie, etc.)
 
-You can customize runtimeCaching by forking or extending the plugin
-```
+- Ensure your API responses are cacheable (Cache-Control, avoid Set-Cookie, etc.)
 
-## Future plans
-```
-Support for custom service-worker.ts
+- If you use the proxy mode, all API requests should be relative (e.g. /api/products)
 
-Dev-time helper to inspect cache
-```
+- To debug: open DevTools → Application → Service Workers & Cache

@@ -1,27 +1,29 @@
 import { Plugin } from "vite";
-import { generateSW } from "workbox-build";
+import { generateSW, RuntimeCaching } from "workbox-build";
 import path from "path";
+import fs from "fs/promises";
 
 interface VitePluginCacheOptions {
   swFileName?: string;
   globPatterns?: string[];
   navigateFallback?: string;
-  apiUrlPatter: RegExp;
+  apiUrlPattern?: RegExp;
+  apiProxy?: {
+    prefix: string;
+    target: string;
+  };
 }
 
 const defaultOptions: VitePluginCacheOptions = {
   swFileName: "vite-cache-service-worker.js",
   globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,woff2}"],
   navigateFallback: "/index.html",
-  apiUrlPatter: /^https:\/\/[^/]+\/api\//,
+  apiUrlPattern: /^https:\/\/[^/]+\/api\//,
 };
 
-export function vitePluginCache(
-  userOptions: VitePluginCacheOptions = {
-    apiUrlPatter: defaultOptions.apiUrlPatter,
-  }
-): Plugin {
+export function vitePluginCache(userOptions: VitePluginCacheOptions): Plugin {
   const options = { ...defaultOptions, ...userOptions };
+
   let outDir: string;
   let swDest: string;
   let basePath = "/";
@@ -39,41 +41,81 @@ export function vitePluginCache(
     },
 
     async closeBundle() {
+      const proxyHandler = options.apiProxy
+        ? `
+import { registerRoute } from 'workbox-routing';
+import { StaleWhileRevalidate } from 'workbox-strategies';
+
+registerRoute(
+  ({ url }) => url.pathname.startsWith('${options.apiProxy.prefix}'),
+  new StaleWhileRevalidate({
+    cacheName: 'api-cache',
+    plugins: [{
+      requestWillFetch: async ({ request }) => {
+        const originalUrl = new URL(request.url);
+        const proxyUrl = '${options.apiProxy.target}' + originalUrl.pathname.slice('${options.apiProxy.prefix}'.length);
+        return new Request(proxyUrl, {
+          method: request.method,
+          headers: request.headers,
+          body: request.body,
+          mode: request.mode,
+          credentials: request.credentials,
+          cache: request.cache,
+          redirect: request.redirect,
+          referrer: request.referrer,
+          integrity: request.integrity
+        });
+      }
+    }]
+  })
+);
+`
+        : "";
+
+      const runtimeCaching: RuntimeCaching[] = [
+        {
+          urlPattern: /.*/,
+          handler: "StaleWhileRevalidate",
+          options: {
+            cacheName: "runtime-cache",
+            expiration: {
+              maxEntries: 200,
+              maxAgeSeconds: 7 * 24 * 60 * 60,
+            },
+          },
+        },
+      ];
+
+      if (options.apiUrlPattern) {
+        runtimeCaching.push({
+          urlPattern: options.apiUrlPattern,
+          handler: "StaleWhileRevalidate",
+          options: {
+            cacheName: "api-cache",
+            expiration: {
+              maxEntries: 50,
+              maxAgeSeconds: 10 * 60,
+            },
+            cacheableResponse: {
+              statuses: [0, 200, 201],
+            },
+          },
+        });
+      }
+
       const { count, size, warnings } = await generateSW({
         swDest,
         globDirectory: outDir,
         globPatterns: options.globPatterns,
-        runtimeCaching: [
-          {
-            urlPattern: options.apiUrlPatter,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "api-cache",
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 10 * 60,
-              },
-              cacheableResponse: {
-                statuses: [0, 200, 201],
-              },
-            },
-          },
-          {
-            urlPattern: /.*/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "runtime-cache",
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 7 * 24 * 60 * 60,
-              },
-            },
-          },
-        ],
+        runtimeCaching,
         navigateFallback: options.navigateFallback,
         skipWaiting: true,
         clientsClaim: true,
       });
+
+      const swCode = await fs.readFile(swDest, "utf-8");
+      const patched = swCode + "\n\n" + proxyHandler;
+      await fs.writeFile(swDest, patched, "utf-8");
 
       console.log(
         "📦 Cached files:",
