@@ -5,7 +5,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/Alex5/vite-plugin-cache"
   },
   "keywords": [
     "vite",
