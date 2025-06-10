@@ -6,16 +6,20 @@ interface VitePluginCacheOptions {
   swFileName?: string;
   globPatterns?: string[];
   navigateFallback?: string;
+  apiUrlPatter: RegExp;
 }
 
 const defaultOptions: VitePluginCacheOptions = {
   swFileName: "vite-cache-service-worker.js",
   globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,woff2}"],
   navigateFallback: "/index.html",
+  apiUrlPatter: /^https:\/\/[^/]+\/api\//,
 };
 
 export function vitePluginCache(
-  userOptions: VitePluginCacheOptions = {}
+  userOptions: VitePluginCacheOptions = {
+    apiUrlPatter: defaultOptions.apiUrlPatter,
+  }
 ): Plugin {
   const options = { ...defaultOptions, ...userOptions };
   let outDir: string;
@@ -41,7 +45,7 @@ export function vitePluginCache(
         globPatterns: options.globPatterns,
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/[^/]+\/api\//,
+            urlPattern: options.apiUrlPatter,
             handler: "StaleWhileRevalidate",
             options: {
               cacheName: "api-cache",
@@ -50,7 +54,7 @@ export function vitePluginCache(
                 maxAgeSeconds: 10 * 60,
               },
               cacheableResponse: {
-                statuses: [200, 201],
+                statuses: [0, 200, 201],
               },
             },
           },
