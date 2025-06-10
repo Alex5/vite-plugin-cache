@@ -52,7 +52,7 @@ export function vitePluginCache(
             },
           },
           {
-            urlPattern: /\/api\//,
+            urlPattern: /^https:\/\/[^/]+\/api\//,
             handler: "StaleWhileRevalidate",
             options: {
               cacheName: "api-cache",
@@ -90,7 +90,7 @@ if ('serviceWorker' in navigator) {
   });
 }
               `,
-              injectTo: "body",
+              injectTo: "head",
             },
           ],
         };
