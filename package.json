@@ -1,0 +1,46 @@
+{
+  "name": "vite-plugin-cache",
+  "version": "1.0.0",
+  "author": "твоё имя или ник",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/твой-ник/vite-plugin-cache.git"
+  },
+  "keywords": [
+    "vite",
+    "plugin",
+    "workbox",
+    "pwa",
+    "service-worker",
+    "cache"
+  ],
+  "description": "Zero-config Vite plugin to add Workbox-based service worker with stale-while-revalidate caching.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rslib build",
+    "check": "biome check --write",
+    "dev": "rslib build --watch",
+    "format": "biome format --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@rslib/core": "^0.9.2",
+    "@types/node": "^22.15.31",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "vite": "^6.3.5",
+    "workbox-build": "^7.3.0"
+  }
+}
