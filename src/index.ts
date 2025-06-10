@@ -41,17 +41,6 @@ export function vitePluginCache(
         globPatterns: options.globPatterns,
         runtimeCaching: [
           {
-            urlPattern: /.*/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "runtime-cache",
-              expiration: {
-                maxEntries: 200,
-                maxAgeSeconds: 7 * 24 * 60 * 60,
-              },
-            },
-          },
-          {
             urlPattern: /^https:\/\/[^/]+\/api\//,
             handler: "StaleWhileRevalidate",
             options: {
@@ -61,7 +50,18 @@ export function vitePluginCache(
                 maxAgeSeconds: 10 * 60,
               },
               cacheableResponse: {
-                statuses: [200],
+                statuses: [200, 201],
+              },
+            },
+          },
+          {
+            urlPattern: /.*/,
+            handler: "StaleWhileRevalidate",
+            options: {
+              cacheName: "runtime-cache",
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 7 * 24 * 60 * 60,
               },
             },
           },
