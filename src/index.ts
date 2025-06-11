@@ -42,8 +42,8 @@ export function vitePluginCache(userOptions: VitePluginCacheOptions): Plugin {
 
     async closeBundle() {
       const proxyImports = `
-import { registerRoute } from 'workbox-routing';
-import { StaleWhileRevalidate } from 'workbox-strategies';
+const { registerRoute } = workbox.routing;
+const { StaleWhileRevalidate } = workbox.strategies;
 `.trim();
 
       const proxyCode = options.apiProxy
