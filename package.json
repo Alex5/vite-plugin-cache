@@ -27,7 +27,7 @@
   ],
   "scripts": {
     "build": "rslib build",
-    "postbuild": "esbuild src/sw.ts --bundle --format=esm --target=es2020 --outfile=dist/sw.js --minify",
+    "postbuild": "esbuild src/sw.js --bundle --format=esm --target=es2020 --outfile=dist/sw.js --minify",
     "check": "biome check --write",
     "dev": "rslib build --watch",
     "format": "biome format --write"
