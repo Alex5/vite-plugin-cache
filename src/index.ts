@@ -1,17 +1,14 @@
 import { Plugin } from "vite";
-import { generateSW, RuntimeCaching } from "workbox-build";
 import path from "path";
 import fs from "fs/promises";
 
 interface VitePluginCacheOptions {
   swFileName?: string;
-  globPatterns?: string[];
   apiUrlPattern?: RegExp;
 }
 
 const defaultOptions: VitePluginCacheOptions = {
   swFileName: "vite-plugin-cache-worker.js",
-  globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,woff2}"],
   apiUrlPattern: /^https:\/\/[^/]+\/api\//,
 };
 
@@ -23,7 +20,6 @@ export function vitePluginCache(
   let outDir: string;
   let basePath = "/";
   let swDest: string;
-  let apiSwDest: string;
 
   return {
     name: "vite-plugin-cache",
@@ -47,23 +43,30 @@ const { StaleWhileRevalidate } = workbox.strategies;
 const { ExpirationPlugin } = workbox.expiration;
 
 registerRoute(
-  ({ url }) => ${options.apiUrlPattern}.test(url.href),
+  ({ request }) =>
+    ["document", "script", "style", "image", "font"].includes(request.destination),
   new StaleWhileRevalidate({
-    cacheName: "api-cache",
-    plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 5 * 60 })],
+    cacheName: "assets-cache",
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 100,
+        maxAgeSeconds: 7 * 24 * 60 * 60, // 7 дней
+      }),
+    ],
   })
 );
 
 registerRoute(
-  ({ request }) =>
-    request.destination === "script" ||
-    request.destination === "style" ||
-    request.destination === "document" ||
-    request.destination === "font" ||
-    request.destination === "image",
-  new StaleWhileRevalidate({
-    cacheName: "assets-cache",
-    plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 })],
+  ({ url, request }) => ${options.apiUrlPattern}.test(url.href) && request.method === "GET",
+  new NetworkFirst({
+    cacheName: "api-cache",
+    networkTimeoutSeconds: 3,
+    plugins: [
+      new ExpirationPlugin({
+        maxAgeSeconds: 5 * 60,
+        maxEntries: 50,
+      }),
+    ],
   })
 );
 
@@ -72,7 +75,7 @@ self.clients.claim();
 `;
       await fs.writeFile(swDest, workboxSwCode, "utf-8");
 
-      console.log("🛠 API service worker created:", swDest);
+      console.debug("vite-plugin-cache: API service worker created:", swDest);
     },
 
     transformIndexHtml: {
@@ -88,7 +91,7 @@ self.clients.claim();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('${basePath}${options.swFileName}')
-      .then(() => console.log('API SW registered'))
+      .then(() => console.debug('vite-plugin-cache: service worker registered'))
       .catch(console.error);
   });
 }
