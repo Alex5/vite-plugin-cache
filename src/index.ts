@@ -41,21 +41,18 @@ export function vitePluginCache(userOptions: VitePluginCacheOptions): Plugin {
     },
 
     async closeBundle() {
-      const proxyImports = `
-const { registerRoute } = workbox.routing;
-const { StaleWhileRevalidate } = workbox.strategies;
-`.trim();
-
       const proxyCode = options.apiProxy
         ? `
-registerRoute(
+${"WORKBOX"}.routing.registerRoute(
   ({ url }) => url.pathname.startsWith('${options.apiProxy.prefix}'),
-  new StaleWhileRevalidate({
+  new ${"WORKBOX"}.strategies.StaleWhileRevalidate({
     cacheName: 'api-cache',
     plugins: [{
       requestWillFetch: async ({ request }) => {
         const originalUrl = new URL(request.url);
-        const proxyUrl = '${options.apiProxy.target}' + originalUrl.pathname.slice('${options.apiProxy.prefix}'.length);
+        const proxyUrl = '${
+          options.apiProxy.target
+        }' + originalUrl.pathname.slice('${options.apiProxy.prefix}'.length);
         return new Request(proxyUrl, {
           method: request.method,
           headers: request.headers,
@@ -71,7 +68,7 @@ registerRoute(
     }]
   })
 );
-`
+`.trim()
         : "";
 
       const runtimeCaching: RuntimeCaching[] = [
@@ -116,7 +113,14 @@ registerRoute(
       });
 
       const swCode = await fs.readFile(swDest, "utf-8");
-      const patched = `${proxyImports}\n\n${swCode}\n\n${proxyCode}`;
+      const patched = swCode.replace(
+        /define\(\[.*?\],\s*function\s*\((\w+)\)\s*\{/,
+        (match, workboxVar) => {
+          // Заменяем "WORKBOX" на имя переменной в функции
+          const finalProxyCode = proxyCode.replace(/WORKBOX/g, workboxVar);
+          return `${match}\n\n${finalProxyCode}`;
+        }
+      );
       await fs.writeFile(swDest, patched, "utf-8");
 
       console.log(
