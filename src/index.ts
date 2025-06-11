@@ -39,7 +39,7 @@ export function vitePluginCache(
     },
 
     async closeBundle() {
-      const swTemplatePath = path.resolve(__dirname, "sw.ts");
+      const swTemplatePath = path.resolve(__dirname, "sw.js");
       const template = fs.readFileSync(swTemplatePath, "utf-8");
 
       const replaced = template
