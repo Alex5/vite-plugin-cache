@@ -1,4 +1,4 @@
-import { build } from "esbuild";
+import fs from "fs";
 import { Plugin } from "vite";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -37,16 +37,9 @@ export function vitePluginCache(
     },
 
     async closeBundle() {
-      await build({
-        entryPoints: [path.resolve(__dirname, "sw.js")],
-        bundle: true,
-        outfile: swDest,
-        format: "esm",
-        target: "es2020",
-        minify: true,
-      });
+      const swSourcePath = path.resolve(__dirname, "sw.js");
 
-      console.debug("vite-plugin-cache: service worker bundled at", swDest);
+      fs.copyFileSync(swSourcePath, swDest);
     },
 
     transformIndexHtml: {

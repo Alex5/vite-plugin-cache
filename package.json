@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-cache",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": "alex5",
   "license": "MIT",
   "repository": "git+https://github.com/Alex5/vite-plugin-cache.git",
@@ -23,11 +23,12 @@
   },
   "types": "./dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "dist/sw.js"
   ],
   "scripts": {
     "build": "rslib build",
-    "postbuild": "esbuild src/sw.js --bundle --format=esm --target=es2020 --outfile=dist/sw.js --minify",
+    "postbuild": "esbuild src/sw.ts --bundle --format=esm --target=es2020 --outfile=dist/sw.js --minify",
     "check": "biome check --write",
     "dev": "rslib build --watch",
     "format": "biome format --write"
