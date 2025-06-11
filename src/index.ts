@@ -34,7 +34,7 @@ export function vitePluginCache(
 
     async closeBundle() {
       await build({
-        entryPoints: [path.resolve(__dirname, "sw.ts")],
+        entryPoints: [path.resolve(__dirname, "sw.js")],
         bundle: true,
         outfile: swDest,
         format: "esm",

@@ -31,8 +31,3 @@ registerRoute(
     ],
   })
 );
-
-// @ts-ignore
-self.skipWaiting();
-// @ts-ignore
-self.clients.claim();
