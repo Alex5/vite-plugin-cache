@@ -39,7 +39,7 @@ importScripts(
 );
 
 const { registerRoute } = workbox.routing;
-const { StaleWhileRevalidate } = workbox.strategies;
+const { StaleWhileRevalidate, NetworkFirst } = workbox.strategies;
 const { ExpirationPlugin } = workbox.expiration;
 
 registerRoute(
