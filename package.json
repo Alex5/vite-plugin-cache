@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-cache",
-  "version": "1.0.11",
+  "version": "1.0.12",
   "author": "alex5",
   "license": "MIT",
   "repository": {
@@ -31,8 +31,7 @@
     "build": "rslib build",
     "check": "biome check --write",
     "dev": "rslib build --watch",
-    "format": "biome format --write",
-    "publish": "npm publish --access public"
+    "format": "biome format --write"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

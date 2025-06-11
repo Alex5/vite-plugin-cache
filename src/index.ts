@@ -5,19 +5,15 @@ import fs from "fs/promises";
 
 interface VitePluginCacheOptions {
   swFileName?: string;
+  apiSwFileName?: string;
   globPatterns?: string[];
-  navigateFallback?: string;
   apiUrlPattern?: RegExp;
-  apiProxy?: {
-    prefix: string;
-    target: string;
-  };
 }
 
 const defaultOptions: VitePluginCacheOptions = {
   swFileName: "vite-cache-service-worker.js",
+  apiSwFileName: "api-cache-worker.js",
   globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,woff2}"],
-  navigateFallback: "/index.html",
   apiUrlPattern: /^https:\/\/[^/]+\/api\//,
 };
 
@@ -25,52 +21,24 @@ export function vitePluginCache(userOptions: VitePluginCacheOptions): Plugin {
   const options = { ...defaultOptions, ...userOptions };
 
   let outDir: string;
-  let swDest: string;
   let basePath = "/";
+  let swDest: string;
+  let apiSwDest: string;
 
   return {
     name: "vite-plugin-cache",
-
     apply: "build",
 
     configResolved(config) {
       outDir = config.build.outDir;
-      swDest = path.resolve(outDir, options.swFileName!);
       basePath = config.base || "/";
       if (!basePath.endsWith("/")) basePath += "/";
+      swDest = path.resolve(outDir, options.swFileName!);
+      apiSwDest = path.resolve(outDir, options.apiSwFileName!);
     },
 
     async closeBundle() {
-      const proxyCode = options.apiProxy
-        ? `
-${"WORKBOX"}.routing.registerRoute(
-  ({ url }) => url.pathname.startsWith('${options.apiProxy.prefix}'),
-  new ${"WORKBOX"}.strategies.StaleWhileRevalidate({
-    cacheName: 'api-cache',
-    plugins: [{
-      requestWillFetch: async ({ request }) => {
-        const originalUrl = new URL(request.url);
-        const proxyUrl = '${
-          options.apiProxy.target
-        }' + originalUrl.pathname.slice('${options.apiProxy.prefix}'.length);
-        return new Request(proxyUrl, {
-          method: request.method,
-          headers: request.headers,
-          body: request.body,
-          mode: request.mode,
-          credentials: request.credentials,
-          cache: request.cache,
-          redirect: request.redirect,
-          referrer: request.referrer,
-          integrity: request.integrity
-        });
-      }
-    }]
-  })
-);
-`.trim()
-        : "";
-
+      // 1. Генерируем основной SW через Workbox
       const runtimeCaching: RuntimeCaching[] = [
         {
           urlPattern: /.*/,
@@ -85,57 +53,75 @@ ${"WORKBOX"}.routing.registerRoute(
         },
       ];
 
-      if (options.apiUrlPattern) {
-        runtimeCaching.push({
-          urlPattern: options.apiUrlPattern,
-          handler: "StaleWhileRevalidate",
-          options: {
-            cacheName: "api-cache",
-            expiration: {
-              maxEntries: 50,
-              maxAgeSeconds: 10 * 60,
-            },
-            cacheableResponse: {
-              statuses: [0, 200, 201],
-            },
-          },
-        });
-      }
-
       const { count, size, warnings } = await generateSW({
         swDest,
         globDirectory: outDir,
         globPatterns: options.globPatterns,
         runtimeCaching,
-        navigateFallback: options.navigateFallback,
         skipWaiting: true,
         clientsClaim: true,
       });
 
-      const swCode = await fs.readFile(swDest, "utf-8");
-      const patched = swCode.replace(
-        /define\(\[.*?\],\s*function\s*\((\w+)\)\s*\{/,
-        (match, workboxVar) => {
-          // Заменяем "WORKBOX" на имя переменной в функции
-          const finalProxyCode = proxyCode.replace(/WORKBOX/g, workboxVar);
-          return `${match}\n\n${finalProxyCode}`;
-        }
-      );
-      await fs.writeFile(swDest, patched, "utf-8");
-
       console.log(
-        "📦 Cached files:",
+        "📦 Workbox cached files:",
         count,
         "Size:",
         size,
         "Warnings:",
         warnings
       );
+
+      // 2. Создаём кастомный SW для API
+      const apiSwCode = `
+// --- Auto-generated API cache worker ---
+const CACHE_NAME = "api-cache-v1";
+
+const API_REGEX = ${options.apiUrlPattern};
+
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method === "GET" && API_REGEX.test(request.url)) {
+    event.respondWith(staleWhileRevalidate(request));
+  }
+});
+
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+
+  const fetchPromise = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => cached || Response.error());
+
+  return cached || fetchPromise;
+}
+`;
+      await fs.writeFile(apiSwDest, apiSwCode, "utf-8");
+
+      console.log("🛠 API service worker created:", apiSwDest);
     },
 
     transformIndexHtml: {
-      enforce: "post",
-      transform(html) {
+      order: "post",
+      handler(html) {
         return {
           html,
           tags: [
@@ -146,7 +132,11 @@ ${"WORKBOX"}.routing.registerRoute(
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('${basePath}${options.swFileName}')
-      .then(() => console.log('Service Worker registered'))
+      .then(() => console.log('Static SW registered'))
+      .catch(console.error);
+
+    navigator.serviceWorker.register('${basePath}${options.apiSwFileName}', { scope: '/api/' })
+      .then(() => console.log('API SW registered'))
       .catch(console.error);
   });
 }
