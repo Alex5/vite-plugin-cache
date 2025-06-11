@@ -17,7 +17,9 @@ const defaultOptions: VitePluginCacheOptions = {
   apiUrlPattern: /^https:\/\/[^/]+\/api\//,
 };
 
-export function vitePluginCache(userOptions: VitePluginCacheOptions): Plugin {
+export function vitePluginCache(
+  userOptions: VitePluginCacheOptions = {}
+): Plugin {
   const options = { ...defaultOptions, ...userOptions };
 
   let outDir: string;
