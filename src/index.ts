@@ -5,14 +5,12 @@ import fs from "fs/promises";
 
 interface VitePluginCacheOptions {
   swFileName?: string;
-  apiSwFileName?: string;
   globPatterns?: string[];
   apiUrlPattern?: RegExp;
 }
 
 const defaultOptions: VitePluginCacheOptions = {
-  swFileName: "vite-plugin-cache-assets-worker.js",
-  apiSwFileName: "vite-plugin-cache-api-worker.js",
+  swFileName: "vite-plugin-cache-worker.js",
   globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,woff2}"],
   apiUrlPattern: /^https:\/\/[^/]+\/api\//,
 };
@@ -36,88 +34,44 @@ export function vitePluginCache(
       basePath = config.base || "/";
       if (!basePath.endsWith("/")) basePath += "/";
       swDest = path.resolve(outDir, options.swFileName!);
-      apiSwDest = path.resolve(outDir, options.apiSwFileName!);
     },
 
     async closeBundle() {
-      const runtimeCaching: RuntimeCaching[] = [
-        {
-          urlPattern: /.*/,
-          handler: "StaleWhileRevalidate",
-          options: {
-            cacheName: "runtime-cache",
-            expiration: {
-              maxEntries: 200,
-              maxAgeSeconds: 7 * 24 * 60 * 60,
-            },
-          },
-        },
-      ];
+      const workboxSwCode = `
+importScripts(
+  "https://storage.googleapis.com/workbox-cdn/releases/7.3.0/workbox-sw.js"
+);
 
-      const { count, size, warnings } = await generateSW({
-        swDest,
-        globDirectory: outDir,
-        globPatterns: options.globPatterns,
-        runtimeCaching,
-        skipWaiting: true,
-        clientsClaim: true,
-      });
+const { registerRoute } = workbox.routing;
+const { StaleWhileRevalidate } = workbox.strategies;
+const { ExpirationPlugin } = workbox.expiration;
 
-      console.log(
-        "📦 Workbox cached files:",
-        count,
-        "Size:",
-        size,
-        "Warnings:",
-        warnings
-      );
+registerRoute(
+  ({ url }) => ${options.apiUrlPattern}.test(url.href),
+  new StaleWhileRevalidate({
+    cacheName: "api-cache",
+    new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 })
+  })
+);
 
-      // 2. Создаём кастомный SW для API
-      const apiSwCode = `
-// --- Auto-generated API cache worker ---
-const CACHE_NAME = "api-cache-v1";
+registerRoute(
+  ({ request }) =>
+    request.destination === "script" ||
+    request.destination === "style" ||
+    request.destination === "document" ||
+    request.destination === "font" ||
+    request.destination === "image",
+  new StaleWhileRevalidate({
+    cacheName: "assets-cache",
+  })
+);
 
-const API_REGEX = ${options.apiUrlPattern};
-
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  if (request.method === "GET" && API_REGEX.test(request.url)) {
-    event.respondWith(staleWhileRevalidate(request));
-  }
-});
-
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(CACHE_NAME);
-  const cached = await cache.match(request);
-
-  const fetchPromise = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => cached || Response.error());
-
-  return cached || fetchPromise;
-}
+self.skipWaiting();
+self.clients.claim();
 `;
-      await fs.writeFile(apiSwDest, apiSwCode, "utf-8");
+      await fs.writeFile(swDest, workboxSwCode, "utf-8");
 
-      console.log("🛠 API service worker created:", apiSwDest);
+      console.log("🛠 API service worker created:", swDest);
     },
 
     transformIndexHtml: {
@@ -133,10 +87,6 @@ async function staleWhileRevalidate(request) {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('${basePath}${options.swFileName}')
-      .then(() => console.log('Static SW registered'))
-      .catch(console.error);
-
-    navigator.serviceWorker.register('${basePath}${options.apiSwFileName}')
       .then(() => console.log('API SW registered'))
       .catch(console.error);
   });
