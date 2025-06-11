@@ -41,11 +41,13 @@ export function vitePluginCache(userOptions: VitePluginCacheOptions): Plugin {
     },
 
     async closeBundle() {
-      const proxyHandler = options.apiProxy
-        ? `
+      const proxyImports = `
 import { registerRoute } from 'workbox-routing';
 import { StaleWhileRevalidate } from 'workbox-strategies';
+`.trim();
 
+      const proxyCode = options.apiProxy
+        ? `
 registerRoute(
   ({ url }) => url.pathname.startsWith('${options.apiProxy.prefix}'),
   new StaleWhileRevalidate({
@@ -114,7 +116,7 @@ registerRoute(
       });
 
       const swCode = await fs.readFile(swDest, "utf-8");
-      const patched = swCode + "\n\n" + proxyHandler;
+      const patched = `${proxyImports}\n\n${swCode}\n\n${proxyCode}`;
       await fs.writeFile(swDest, patched, "utf-8");
 
       console.log(
