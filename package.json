@@ -1,12 +1,9 @@
 {
   "name": "vite-plugin-cache",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "author": "alex5",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Alex5/vite-plugin-cache"
-  },
+  "repository": "git+https://github.com/Alex5/vite-plugin-cache.git",
   "keywords": [
     "vite",
     "plugin",
