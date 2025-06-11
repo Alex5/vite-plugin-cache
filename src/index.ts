@@ -1,6 +1,6 @@
 import fs from "fs";
-import { Plugin } from "vite";
 import path from "path";
+import { Plugin } from "vite";
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -9,11 +9,13 @@ const __dirname = path.dirname(__filename);
 interface VitePluginCacheOptions {
   swFileName?: string;
   apiUrlPattern?: RegExp;
+  excludedApiPaths?: string[];
 }
 
 const defaultOptions: VitePluginCacheOptions = {
   swFileName: "vite-plugin-cache-worker.js",
   apiUrlPattern: /^https:\/\/[^/]+\/api\//,
+  excludedApiPaths: [],
 };
 
 export function vitePluginCache(
@@ -37,9 +39,14 @@ export function vitePluginCache(
     },
 
     async closeBundle() {
-      const swSourcePath = path.resolve(__dirname, "sw.js");
+      const swTemplatePath = path.resolve(__dirname, "sw.template.js");
+      const template = fs.readFileSync(swTemplatePath, "utf-8");
 
-      fs.copyFileSync(swSourcePath, swDest);
+      const replaced = template
+        .replace("__EXCLUDED_PATHS__", JSON.stringify(options.excludedApiPaths))
+        .replace("__API_URL_PATTERN__", options.apiUrlPattern!.toString());
+
+      fs.writeFileSync(swDest, replaced);
     },
 
     transformIndexHtml: {

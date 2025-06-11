@@ -1,6 +1,11 @@
 import { registerRoute } from "workbox-routing";
-import { StaleWhileRevalidate, NetworkFirst } from "workbox-strategies";
+import { StaleWhileRevalidate } from "workbox-strategies";
 import { ExpirationPlugin } from "workbox-expiration";
+
+declare const __EXCLUDED_PATHS__: string[];
+declare const __API_URL_PATTERN__: string;
+
+const apiUrlPattern = new RegExp(__API_URL_PATTERN__);
 
 registerRoute(
   ({ request }) =>
@@ -19,10 +24,12 @@ registerRoute(
 );
 
 registerRoute(
-  ({ url, request }) => url.href.includes("/api/") && request.method === "GET",
-  new NetworkFirst({
+  ({ url, request }) =>
+    apiUrlPattern.test(url.href) &&
+    !__EXCLUDED_PATHS__.some((path) => url.pathname.startsWith(path)) &&
+    request.method === "GET",
+  new StaleWhileRevalidate({
     cacheName: "api-cache",
-    networkTimeoutSeconds: 3,
     plugins: [
       new ExpirationPlugin({
         maxEntries: 50,
