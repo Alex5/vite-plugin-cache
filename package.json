@@ -41,5 +41,8 @@
   },
   "dependencies": {
     "vite": "^6.3.5"
+  },
+  "peerDependencies": {
+    "esbuild": "*"
   }
 }

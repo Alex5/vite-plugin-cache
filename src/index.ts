@@ -1,6 +1,6 @@
+import { build } from "esbuild";
 import { Plugin } from "vite";
 import path from "path";
-import fs from "fs/promises";
 
 interface VitePluginCacheOptions {
   swFileName?: string;
@@ -33,49 +33,16 @@ export function vitePluginCache(
     },
 
     async closeBundle() {
-      const workboxSwCode = `
-importScripts(
-  "https://storage.googleapis.com/workbox-cdn/releases/7.3.0/workbox-sw.js"
-);
+      await build({
+        entryPoints: [path.resolve(__dirname, "sw.ts")],
+        bundle: true,
+        outfile: swDest,
+        format: "esm",
+        target: "es2020",
+        minify: true,
+      });
 
-const { registerRoute } = workbox.routing;
-const { StaleWhileRevalidate, NetworkFirst } = workbox.strategies;
-const { ExpirationPlugin } = workbox.expiration;
-
-registerRoute(
-  ({ request }) =>
-    ["document", "script", "style", "image", "font"].includes(request.destination),
-  new StaleWhileRevalidate({
-    cacheName: "assets-cache",
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 7 * 24 * 60 * 60, // 7 дней
-      }),
-    ],
-  })
-);
-
-registerRoute(
-  ({ url, request }) => ${options.apiUrlPattern}.test(url.href) && request.method === "GET",
-  new NetworkFirst({
-    cacheName: "api-cache",
-    networkTimeoutSeconds: 3,
-    plugins: [
-      new ExpirationPlugin({
-        maxAgeSeconds: 5 * 60,
-        maxEntries: 50,
-      }),
-    ],
-  })
-);
-
-self.skipWaiting();
-self.clients.claim();
-`;
-      await fs.writeFile(swDest, workboxSwCode, "utf-8");
-
-      console.debug("vite-plugin-cache: API service worker created:", swDest);
+      console.debug("vite-plugin-cache: service worker bundled at", swDest);
     },
 
     transformIndexHtml: {
@@ -88,13 +55,13 @@ self.clients.claim();
               tag: "script",
               attrs: {},
               children: `
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('${basePath}${options.swFileName}')
-      .then(() => console.debug('vite-plugin-cache: service worker registered'))
-      .catch(console.error);
-  });
-}
+                if ('serviceWorker' in navigator) {
+                  window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('${basePath}${options.swFileName}')
+                      .then(() => console.debug('vite-plugin-cache: service worker registered'))
+                      .catch(console.error);
+                  });
+                }
               `,
               injectTo: "head",
             },
