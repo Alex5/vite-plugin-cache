@@ -50,7 +50,7 @@ registerRoute(
   ({ url }) => ${options.apiUrlPattern}.test(url.href),
   new StaleWhileRevalidate({
     cacheName: "api-cache",
-    new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 7 * 24 * 60 * 60 })
+    plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 5 * 60 })],
   })
 );
 
@@ -63,6 +63,7 @@ registerRoute(
     request.destination === "image",
   new StaleWhileRevalidate({
     cacheName: "assets-cache",
+    plugins: [new ExpirationPlugin({ maxEntries: 100, maxAgeSeconds: 24 * 60 * 60 })],
   })
 );
 
