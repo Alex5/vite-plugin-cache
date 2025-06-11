@@ -11,8 +11,8 @@ interface VitePluginCacheOptions {
 }
 
 const defaultOptions: VitePluginCacheOptions = {
-  swFileName: "vite-cache-service-worker.js",
-  apiSwFileName: "api-cache-worker.js",
+  swFileName: "vite-plugin-cache-assets-worker.js",
+  apiSwFileName: "vite-plugin-cache-api-worker.js",
   globPatterns: ["**/*.{js,css,html,svg,png,jpg,jpeg,woff2}"],
   apiUrlPattern: /^https:\/\/[^/]+\/api\//,
 };
@@ -38,7 +38,6 @@ export function vitePluginCache(userOptions: VitePluginCacheOptions): Plugin {
     },
 
     async closeBundle() {
-      // 1. Генерируем основной SW через Workbox
       const runtimeCaching: RuntimeCaching[] = [
         {
           urlPattern: /.*/,
@@ -135,7 +134,7 @@ if ('serviceWorker' in navigator) {
       .then(() => console.log('Static SW registered'))
       .catch(console.error);
 
-    navigator.serviceWorker.register('${basePath}${options.apiSwFileName}', { scope: '/api/' })
+    navigator.serviceWorker.register('${basePath}${options.apiSwFileName}')
       .then(() => console.log('API SW registered'))
       .catch(console.error);
   });
