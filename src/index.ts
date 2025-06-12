@@ -1,30 +1,49 @@
-import fs from "fs";
 import path from "path";
 import { Plugin } from "vite";
-import { fileURLToPath } from "url";
+import { generateSWCode } from "./sw";
+import { VitePluginCacheConfig } from "./types";
+import { SW_FILENAME, API_URL_PATTERN } from "./consts";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-interface VitePluginCacheOptions {
-  swFileName?: string;
-  apiUrlPattern?: RegExp;
-  excludedApiPaths?: string[];
-}
-
-const defaultOptions: VitePluginCacheOptions = {
-  swFileName: "vite-plugin-cache-worker.js",
-  apiUrlPattern: /^https:\/\/[^/]+\/api\//,
-  excludedApiPaths: [],
+const defaultPluginConfig: VitePluginCacheConfig = {
+  apiUrlPatter: API_URL_PATTERN,
+  config: {
+    "assets-cache": {
+      match: ({ request }) =>
+        ["document", "script", "style", "image", "font"].includes(
+          request.destination
+        ),
+      strategy: "stale-while-revalidate",
+      plugins: {
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 86400, // 1 day
+        },
+      },
+    },
+    "api-cache": {
+      match: ({ url, request }) =>
+        API_URL_PATTERN.test(url.href) && request.method === "GET",
+      strategy: "network-first",
+      networkTimeoutSeconds: 3,
+      plugins: {
+        expiration: {
+          maxEntries: 100,
+          maxAgeSeconds: 5 * 60, // 5 minutes
+        },
+      },
+    },
+  },
 };
 
 export function vitePluginCache(
-  userOptions: VitePluginCacheOptions = {}
+  initialPluginConfig: VitePluginCacheConfig = {}
 ): Plugin {
-  const options = { ...defaultOptions, ...userOptions };
+  const pluginConfig = { ...defaultPluginConfig, ...initialPluginConfig };
 
   let outDir: string;
+
   let basePath = "/";
+
   let swDest: string;
 
   return {
@@ -33,20 +52,20 @@ export function vitePluginCache(
 
     configResolved(config) {
       outDir = config.build.outDir;
+
       basePath = config.base || "/";
+
       if (!basePath.endsWith("/")) basePath += "/";
-      swDest = path.resolve(outDir, options.swFileName!);
+
+      swDest = path.resolve(outDir, SW_FILENAME);
     },
 
     async closeBundle() {
-      const swTemplatePath = path.resolve(__dirname, "sw.js");
-      const template = fs.readFileSync(swTemplatePath, "utf-8");
+      await generateSWCode(pluginConfig);
 
-      const replaced = template
-        .replace("__EXCLUDED_PATHS__", JSON.stringify(options.excludedApiPaths))
-        .replace("__API_URL_PATTERN__", options.apiUrlPattern!.toString());
-
-      fs.writeFileSync(swDest, replaced);
+      console.debug(
+        `✅ [vite-plugin-cache] Service worker generated at: ${swDest}`
+      );
     },
 
     transformIndexHtml: {
@@ -61,7 +80,7 @@ export function vitePluginCache(
               children: `
                 if ('serviceWorker' in navigator) {
                   window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('${basePath}${options.swFileName}')
+                    navigator.serviceWorker.register('${basePath}${SW_FILENAME}')
                       .then(() => console.debug('vite-plugin-cache: service worker registered'))
                       .catch(console.error);
                   });

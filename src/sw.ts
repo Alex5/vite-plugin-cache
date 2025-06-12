@@ -1,40 +1,79 @@
-import { registerRoute } from "workbox-routing";
-import { StaleWhileRevalidate } from "workbox-strategies";
-import { ExpirationPlugin } from "workbox-expiration";
+import { VitePluginCacheConfig } from "./types";
+import { PLUGINS_MAP, STRATEGY_MAP, SW_FILENAME } from "./consts";
 
-declare const __EXCLUDED_PATHS__: string[];
-declare const __API_URL_PATTERN__: string;
+import { Project, ScriptKind } from "ts-morph";
 
-const apiUrlPattern = new RegExp(__API_URL_PATTERN__);
+const project = new Project();
 
-registerRoute(
-  ({ request }) =>
-    ["document", "script", "style", "image", "font"].includes(
-      request.destination
-    ),
-  new StaleWhileRevalidate({
-    cacheName: "assets-cache",
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 100,
-        maxAgeSeconds: 7 * 24 * 60 * 60,
-      }),
-    ],
-  })
-);
+const file = project.createSourceFile(`dist/${SW_FILENAME}`, "", {
+  overwrite: true,
+  scriptKind: ScriptKind.JS,
+});
 
-registerRoute(
-  ({ url, request }) =>
-    apiUrlPattern.test(url.href) &&
-    !__EXCLUDED_PATHS__.some((path) => url.pathname.startsWith(path)) &&
-    request.method === "GET",
-  new StaleWhileRevalidate({
-    cacheName: "api-cache",
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 5 * 60,
-      }),
-    ],
-  })
-);
+export async function generateSWCode(config: VitePluginCacheConfig) {
+  const strategiesUsed = new Set<string>();
+  const pluginsUsed = new Set<string>();
+
+  for (const entry of Object.values(config.config ?? {})) {
+    strategiesUsed.add(STRATEGY_MAP[entry.strategy]);
+
+    if (entry.plugins) {
+      Object.keys(entry.plugins ?? {}).forEach((key) => {
+        const className = PLUGINS_MAP[key];
+
+        if (className) pluginsUsed.add(className);
+      });
+    }
+  }
+
+  file.addStatements([
+    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/7.2.0/workbox-sw.js");`,
+    ``,
+    `const { registerRoute } = workbox.routing;`,
+    `const { ${Array.from(strategiesUsed.values()).join(
+      ", "
+    )} } = workbox.strategies;`,
+    `const { ${Array.from(pluginsUsed.values()).join(
+      ", "
+    )} } = workbox.expiration;`,
+    ``,
+    `const API_URL_PATTERN = ${config.apiUrlPatter};`,
+    ``,
+  ]);
+
+  Object.entries(config.config ?? {}).forEach(([cacheName, entry]) => {
+    const { match, strategy, plugins = [], ...rest } = entry;
+
+    const strategyClass = STRATEGY_MAP[strategy];
+
+    const pluginInstances = Object.entries(plugins)
+      ?.map(([pluginKey, options]) => {
+        const className = PLUGINS_MAP[pluginKey];
+
+        return `new ${className}(${JSON.stringify(options, null, 2)})`;
+      })
+      .join(",\n");
+
+    const optionsLines = [
+      `cacheName: "${cacheName}"`,
+      ...Object.entries(rest).map(
+        ([key, val]) => `${key}: ${JSON.stringify(val)}`
+      ),
+      ...(pluginInstances
+        ? [`plugins: [\n      ${pluginInstances}\n    ]`]
+        : []),
+    ];
+
+    file.addStatements([
+      `registerRoute(`,
+      `  ${match},`,
+      `  new ${strategyClass}({`,
+      `    ${optionsLines.join(",\n    ")}`,
+      `  })`,
+      `);`,
+      ``,
+    ]);
+  });
+
+  await file.save();
+}
