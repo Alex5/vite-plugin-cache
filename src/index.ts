@@ -5,6 +5,7 @@ import { VitePluginCacheConfig } from "./types";
 import { SW_FILENAME, API_URL_PATTERN } from "./consts";
 
 const defaultPluginConfig: VitePluginCacheConfig = {
+  workboxVersion: "7.1.0",
   apiUrlPattern: API_URL_PATTERN,
   config: {
     "assets-cache": {

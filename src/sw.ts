@@ -27,7 +27,7 @@ export async function generateSWCode(config: VitePluginCacheConfig) {
   }
 
   file.addStatements([
-    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/7.2.0/workbox-sw.js");`,
+    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/${config.workboxVersion}/workbox-sw.js");`,
     ``,
     `const { registerRoute } = workbox.routing;`,
     `const { ${Array.from(strategiesUsed.values()).join(
