@@ -53,6 +53,38 @@ const config = {
   },
 };
 
+// full config rewrite
+vitePluginCache({
+  config: {
+    'cdn-cache': {
+      match: ({ url }) => url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com'),
+      strategy: "cache-first",
+      plugins: {
+        expiration: {
+          maxEntries: 30,
+          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+        },
+      }
+    }
+  }
+})
+
+// partial config rewrite
+vitePluginCache({
+  config: (defaultConfig) => ({
+    ...defaultConfig,
+    'cdn-cache': {
+      match: ({ url }) => url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com'),
+      strategy: "cache-first",
+      plugins: {
+        expiration: {
+          maxEntries: 30,
+          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+        },
+      }
+    }
+  })
+})
 ```
 
 ### 📦 What This Plugin Does

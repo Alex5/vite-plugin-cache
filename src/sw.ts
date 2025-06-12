@@ -1,10 +1,5 @@
 import { Config, VitePluginCacheConfig } from "./types";
-import {
-  DEFAULT_CONFIG,
-  PLUGINS_MAP,
-  STRATEGY_MAP,
-  SW_FILENAME,
-} from "./consts";
+import { PLUGINS_MAP, STRATEGY_MAP, SW_FILENAME } from "./consts";
 
 import { Project, ScriptKind } from "ts-morph";
 
