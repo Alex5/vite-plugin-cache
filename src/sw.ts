@@ -37,7 +37,7 @@ export async function generateSWCode(config: VitePluginCacheConfig) {
       ", "
     )} } = workbox.expiration;`,
     ``,
-    `const API_URL_PATTERN = ${config.apiUrlPatter};`,
+    `const API_URL_PATTERN = ${config.apiUrlPattern};`,
     ``,
   ]);
 

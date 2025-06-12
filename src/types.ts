@@ -18,5 +18,5 @@ type CacheConfig = {
 
 export type VitePluginCacheConfig = {
   config?: Record<string, CacheConfig>;
-  apiUrlPatter?: RegExp;
+  apiUrlPattern?: RegExp;
 };

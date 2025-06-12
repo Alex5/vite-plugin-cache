@@ -5,7 +5,7 @@ import { VitePluginCacheConfig } from "./types";
 import { SW_FILENAME, API_URL_PATTERN } from "./consts";
 
 const defaultPluginConfig: VitePluginCacheConfig = {
-  apiUrlPatter: API_URL_PATTERN,
+  apiUrlPattern: API_URL_PATTERN,
   config: {
     "assets-cache": {
       match: ({ request }) =>

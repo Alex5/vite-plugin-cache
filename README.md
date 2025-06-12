@@ -23,7 +23,7 @@ export default defineConfig({
 ### ⚙️ Configuration
 
 ```ts
-// default config included
+// default config
 const config = {
   apiUrlPatter: /^https:\/\/example.com\/api\//,
   config: {
