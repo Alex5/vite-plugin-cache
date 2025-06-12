@@ -16,8 +16,10 @@ type CacheConfig = {
   networkTimeoutSeconds?: number;
 };
 
+export type Config = Record<string, CacheConfig>
+
 export type VitePluginCacheConfig = {
-  config?: Record<string, CacheConfig>;
+  config?: Config | ((defaultPluginConfig: Config) => Config);
   apiUrlPattern?: RegExp;
   workboxVersion?: string;
 };

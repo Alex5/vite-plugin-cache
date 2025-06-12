@@ -2,44 +2,15 @@ import path from "path";
 import { Plugin } from "vite";
 import { generateSWCode } from "./sw";
 import { VitePluginCacheConfig } from "./types";
-import { SW_FILENAME, API_URL_PATTERN } from "./consts";
+import { SW_FILENAME, DEFAULT_OPTS, DEFAULT_CONFIG } from "./consts";
 
-const defaultPluginConfig: VitePluginCacheConfig = {
-  workboxVersion: "7.1.0",
-  apiUrlPattern: API_URL_PATTERN,
-  config: {
-    "assets-cache": {
-      match: ({ request }) =>
-        ["document", "script", "style", "image", "font"].includes(
-          request.destination
-        ),
-      strategy: "stale-while-revalidate",
-      plugins: {
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 86400, // 1 day
-        },
-      },
-    },
-    "api-cache": {
-      match: ({ url, request }) =>
-        API_URL_PATTERN.test(url.href) && request.method === "GET",
-      strategy: "network-first",
-      networkTimeoutSeconds: 3,
-      plugins: {
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 5 * 60, // 5 minutes
-        },
-      },
-    },
-  },
-};
+export function vitePluginCache(opts: VitePluginCacheConfig = {}): Plugin {
+  const config =
+    typeof opts.config === "function"
+      ? opts.config(DEFAULT_CONFIG)
+      : opts.config;
 
-export function vitePluginCache(
-  initialPluginConfig: VitePluginCacheConfig = {}
-): Plugin {
-  const pluginConfig = { ...defaultPluginConfig, ...initialPluginConfig };
+  const pluginOpts = { ...DEFAULT_OPTS, ...opts, config };
 
   let outDir: string;
 
@@ -62,7 +33,7 @@ export function vitePluginCache(
     },
 
     async closeBundle() {
-      await generateSWCode(pluginConfig);
+      await generateSWCode(pluginOpts);
 
       console.debug(
         `✅ [vite-plugin-cache] Service worker generated at: ${swDest}`

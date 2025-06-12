@@ -1,5 +1,10 @@
-import { VitePluginCacheConfig } from "./types";
-import { PLUGINS_MAP, STRATEGY_MAP, SW_FILENAME } from "./consts";
+import { Config, VitePluginCacheConfig } from "./types";
+import {
+  DEFAULT_CONFIG,
+  PLUGINS_MAP,
+  STRATEGY_MAP,
+  SW_FILENAME,
+} from "./consts";
 
 import { Project, ScriptKind } from "ts-morph";
 
@@ -10,11 +15,15 @@ const file = project.createSourceFile(`dist/${SW_FILENAME}`, "", {
   scriptKind: ScriptKind.JS,
 });
 
-export async function generateSWCode(config: VitePluginCacheConfig) {
+export async function generateSWCode(
+  opts: Omit<VitePluginCacheConfig, "config"> & { config?: Config }
+) {
   const strategiesUsed = new Set<string>();
   const pluginsUsed = new Set<string>();
 
-  for (const entry of Object.values(config.config ?? {})) {
+  const { apiUrlPattern, config, workboxVersion } = opts;
+
+  for (const entry of Object.values(config ?? {})) {
     strategiesUsed.add(STRATEGY_MAP[entry.strategy]);
 
     if (entry.plugins) {
@@ -27,21 +36,23 @@ export async function generateSWCode(config: VitePluginCacheConfig) {
   }
 
   file.addStatements([
-    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/${config.workboxVersion}/workbox-sw.js");`,
+    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/${workboxVersion}/workbox-sw.js");`,
     ``,
     `const { registerRoute } = workbox.routing;`,
     `const { ${Array.from(strategiesUsed.values()).join(
       ", "
     )} } = workbox.strategies;`,
-    `const { ${Array.from(pluginsUsed.values()).join(
-      ", "
-    )} } = workbox.expiration;`,
+    pluginsUsed.size
+      ? `const { ${Array.from(pluginsUsed.values()).join(
+          ", "
+        )} } = workbox.expiration;`
+      : ``,
     ``,
-    `const API_URL_PATTERN = ${config.apiUrlPattern};`,
+    `const API_URL_PATTERN = ${apiUrlPattern};`,
     ``,
   ]);
 
-  Object.entries(config.config ?? {}).forEach(([cacheName, entry]) => {
+  Object.entries(config ?? {}).forEach(([cacheName, entry]) => {
     const { match, strategy, plugins = [], ...rest } = entry;
 
     const strategyClass = STRATEGY_MAP[strategy];
