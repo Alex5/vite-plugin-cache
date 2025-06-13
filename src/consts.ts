@@ -36,7 +36,6 @@ export const DEFAULT_OPTS: VitePluginCacheConfig = {
     pageCache: null,
     googleFontsCache: null,
     imageCache: null,
-    offlineFallback: null,
     staticResourceCache: null,
   },
   config: DEFAULT_CONFIG,
