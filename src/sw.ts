@@ -33,7 +33,7 @@ export async function generateSWCode(
   }
 
   file.addStatements([
-    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/${workboxVersion}/workbox-sw.mjs");`,
+    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/${workboxVersion}/workbox-sw.js");`,
     ``,
     `const { registerRoute } = workbox.routing;`,
     `const { ${Array.from(strategiesUsed.values()).join(
