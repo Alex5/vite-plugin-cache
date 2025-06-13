@@ -33,7 +33,7 @@ export async function generateSWCode(
   }
 
   file.addStatements([
-    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/${workboxVersion}/workbox-sw.js");`,
+    `importScripts("https://storage.googleapis.com/workbox-cdn/releases/${workboxVersion}/workbox-sw.mjs");`,
     ``,
     `const { registerRoute } = workbox.routing;`,
     `const { ${Array.from(strategiesUsed.values()).join(
@@ -49,7 +49,7 @@ export async function generateSWCode(
 
   Object.entries(recipies ?? {}).forEach(([cacheName, recipiesOpts]) => {
     file.addStatements([
-      `const { ${cacheName} } = workbox.recipies`,
+      `const { ${cacheName} } = workbox.recipes`,
       `${cacheName}${recipiesOpts ? `(${recipiesOpts})` : "()"}`,
     ]);
   });

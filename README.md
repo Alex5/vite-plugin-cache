@@ -24,30 +24,16 @@ export default defineConfig({
 
 ```ts
 // default config
-const config = {
-  apiUrlPatter: /^https:\/\/example.com\/api\//,
-  config: {
-    "assets-cache": {
-      match: ({ request }) =>
-        ["document", "script", "style", "image", "font"].includes(request.destination),
-      strategy: "stale-while-revalidate",
-      plugins: {
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 86400, // 1 day
-        },
-      },
-    },
-    "api-cache": {
-      match: ({ url, request }) =>
-        /^https:\/\/example.com\/api\//.test(url.href) && request.method === "GET",
-      strategy: "network-first",
-      networkTimeoutSeconds: 3,
-      plugins: {
-        expiration: {
-          maxEntries: 100,
-          maxAgeSeconds: 300, // 5 minutes
-        },
+export const DEFAULT_CONFIG: Config = {
+  "swr-api-cache": {
+    match: ({ url, request }) =>
+      // export const API_URL_PATTERN = /^https:\/\/[^/]+\/api\//;
+      API_URL_PATTERN.test(url.href) && request.method === "GET",
+    strategy: "stale-while-revalidate",
+    plugins: {
+      expiration: {
+        maxEntries: 100,
+        maxAgeSeconds: 60, // 1 minute
       },
     },
   },
