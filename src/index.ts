@@ -7,8 +7,6 @@ import { SW_FILENAME, DEFAULT_OPTS, DEFAULT_CONFIG } from "./consts";
 export function vitePluginCache(opts: VitePluginCacheConfig = {}): Plugin {
   const pluginOpts = { ...DEFAULT_OPTS, ...opts };
 
-  console.log({ pluginOpts });
-
   let outDir: string;
 
   let basePath = "/";
