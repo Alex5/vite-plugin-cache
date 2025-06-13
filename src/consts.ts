@@ -15,12 +15,11 @@ export const PLUGINS_MAP: Record<string, string> = {
 
 export const SW_FILENAME = "vite-plugin-cache-service-worker.js";
 
-export const API_URL_PATTERN = /^https:\/\/[^/]+\/api\//;
-
 export const DEFAULT_CONFIG: Config = {
   "swr-api-cache": {
     match: ({ url, request }) =>
-      API_URL_PATTERN.test(url.href) && request.method === "GET",
+      new RegExp(/^https:\/\/[^/]+\/api\//).test(url.href) &&
+      request.method === "GET",
     strategy: "stale-while-revalidate",
     plugins: {
       expiration: {
@@ -33,7 +32,6 @@ export const DEFAULT_CONFIG: Config = {
 
 export const DEFAULT_OPTS: VitePluginCacheConfig = {
   workboxVersion: "7.1.0",
-  apiUrlPattern: API_URL_PATTERN,
   recipies: {
     pageCache: null,
     googleFontsCache: null,

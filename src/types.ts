@@ -36,6 +36,5 @@ export type VitePluginCacheConfig = {
     googleFontsCache?: GoogleFontCacheOptions | null;
     offlineFallback?: OfflineFallbackOptions | null;
   };
-  apiUrlPattern?: RegExp;
   workboxVersion?: string;
 };
