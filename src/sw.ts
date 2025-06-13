@@ -49,6 +49,13 @@ export async function generateSWCode(
 
   Object.entries(recipies ?? {}).forEach(([cacheName, recipiesOpts]) => {
     file.addStatements([
+      cacheName === "offlineFallback"
+        ? `
+const {NetworkOnly} = workbox.strategies;
+const {setDefaultHandler} = workbox.routing;
+setDefaultHandler(new NetworkOnly());
+        `
+        : "",
       `const { ${cacheName} } = workbox.recipes`,
       `${cacheName}${recipiesOpts ? `(${recipiesOpts})` : "()"}`,
     ]);
@@ -79,7 +86,7 @@ export async function generateSWCode(
       `registerRoute(`,
       `  ${match},`,
       `  new ${strategyClass}({`,
-      `    ${optionsLines.join(",\n    ")}`,
+      `    ${optionsLines.join(",\n")}`,
       `  })`,
       `);`,
       ``,
