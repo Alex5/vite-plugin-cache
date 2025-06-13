@@ -5,12 +5,9 @@ import { VitePluginCacheConfig } from "./types";
 import { SW_FILENAME, DEFAULT_OPTS, DEFAULT_CONFIG } from "./consts";
 
 export function vitePluginCache(opts: VitePluginCacheConfig = {}): Plugin {
-  const config =
-    typeof opts.config === "function"
-      ? opts.config(DEFAULT_CONFIG)
-      : opts.config;
+  const pluginOpts = { ...DEFAULT_OPTS, ...opts };
 
-  const pluginOpts = { ...DEFAULT_OPTS, ...opts, config };
+  console.log({ pluginOpts });
 
   let outDir: string;
 
@@ -33,7 +30,13 @@ export function vitePluginCache(opts: VitePluginCacheConfig = {}): Plugin {
     },
 
     async closeBundle() {
-      await generateSWCode(pluginOpts);
+      await generateSWCode({
+        ...pluginOpts,
+        config:
+          typeof pluginOpts.config === "function"
+            ? pluginOpts.config(DEFAULT_CONFIG)
+            : pluginOpts.config,
+      });
 
       console.debug(
         `✅ [vite-plugin-cache] Service worker generated at: ${swDest}`

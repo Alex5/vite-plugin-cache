@@ -2,6 +2,7 @@ import { Config, VitePluginCacheConfig } from "./types";
 import { PLUGINS_MAP, STRATEGY_MAP, SW_FILENAME } from "./consts";
 
 import { Project, ScriptKind } from "ts-morph";
+import { pageCache } from "workbox-recipes";
 
 const project = new Project();
 
@@ -14,9 +15,10 @@ export async function generateSWCode(
   opts: Omit<VitePluginCacheConfig, "config"> & { config?: Config }
 ) {
   const strategiesUsed = new Set<string>();
+
   const pluginsUsed = new Set<string>();
 
-  const { apiUrlPattern, config, workboxVersion } = opts;
+  const { config, workboxVersion, recipies } = opts;
 
   for (const entry of Object.values(config ?? {})) {
     strategiesUsed.add(STRATEGY_MAP[entry.strategy]);
@@ -43,9 +45,14 @@ export async function generateSWCode(
         )} } = workbox.expiration;`
       : ``,
     ``,
-    `const API_URL_PATTERN = ${apiUrlPattern};`,
-    ``,
   ]);
+
+  Object.entries(recipies ?? {}).forEach(([cacheName, recipiesOpts]) => {
+    file.addStatements([
+      `const { ${cacheName} } = workbox.recipies`,
+      `${cacheName}${recipiesOpts ? `(${recipiesOpts})` : "()"}`,
+    ]);
+  });
 
   Object.entries(config ?? {}).forEach(([cacheName, entry]) => {
     const { match, strategy, plugins = [], ...rest } = entry;
@@ -65,9 +72,7 @@ export async function generateSWCode(
       ...Object.entries(rest).map(
         ([key, val]) => `${key}: ${JSON.stringify(val)}`
       ),
-      ...(pluginInstances
-        ? [`plugins: [\n      ${pluginInstances}\n    ]`]
-        : []),
+      ...(pluginInstances ? [`plugins: [\n${pluginInstances}\n]`] : []),
     ];
 
     file.addStatements([
