@@ -1,102 +1,140 @@
-## 🧩 vite-plugin-cache
+# vite-plugin-cache
 
-A Vite plugin that automatically generates a service worker using Workbox based on a declarative config. Ideal for caching static assets and API requests in Vite projects.
+A Vite plugin that auto-generates and registers a Workbox-based service worker to cache your API requests and static assets.
 
-### 🔧 Installation
+## ✨ Features
+
+- 🔧 Auto-generates a `service worker` using Workbox at build time
+- 🧠 Built-in support for common Workbox strategies:
+  - `stale-while-revalidate`
+  - `cache-first`
+  - `network-first`
+  - `cache-only`
+  - `network-only`
+- 🧩 Supports Workbox plugins like `ExpirationPlugin`
+- 📚 Built-in Workbox recipes: `imageCache`, `pageCache`, `staticResourceCache`, `googleFontsCache`
+- ⚡ Auto-injects service worker registration into your HTML
+
+---
+
+## 🚀 Installation
 
 ```bash
-npm install vite-plugin-cache
+npm install vite-plugin-cache --save-dev
 ```
 
-### 🚀 Usage
+---
+
+## ⚙️ Basic Usage
 
 ```ts
 // vite.config.ts
-import { defineConfig } from "vite";
-import { vitePluginCache } from "vite-plugin-cache";
+import { defineConfig } from 'vite';
+import { vitePluginCache } from './vite-plugin-cache';
 
 export default defineConfig({
   plugins: [vitePluginCache()],
 });
 ```
 
-### ⚙️ Configuration
+This will use the default configuration:
+
+- Caches all `GET` requests to `/api/*` using `stale-while-revalidate`
+- Applies `ExpirationPlugin` with 100 entries and 60 seconds age
+- Injects service worker loader in `index.html`
+
+---
+
+## 🧠 Advanced Usage
+
+### Custom Cache Config
+
+You can override the default caching rules with your own:
 
 ```ts
-// default config
-export const DEFAULT_CONFIG: Config = {
-  "swr-api-cache": {
-    match: ({ url, request }) =>
-      // export const API_URL_PATTERN = /^https:\/\/[^/]+\/api\//;
-      API_URL_PATTERN.test(url.href) && request.method === "GET",
-    strategy: "stale-while-revalidate",
-    plugins: {
-      expiration: {
-        maxEntries: 100,
-        maxAgeSeconds: 60, // 1 minute
+vitePluginCache({
+  config: {
+    'custom-api-cache': {
+      match: ({ url }) => url.pathname.startsWith('/v1/'),
+      strategy: 'network-first',
+      plugins: {
+        expiration: {
+          maxEntries: 50,
+          maxAgeSeconds: 120,
+        },
       },
     },
   },
-};
+});
+```
 
-// full config rewrite
+### Using Built-in Recipes
+
+Workbox recipes simplify common patterns:
+
+```ts
 vitePluginCache({
-  config: {
-    'cdn-cache': {
-      match: ({ url }) => url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com'),
-      strategy: "cache-first",
-      plugins: {
-        expiration: {
-          maxEntries: 30,
-          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-        },
-      }
-    }
-  }
-})
+  recipies: {
+    imageCache: {},
+    googleFontsCache: {},
+    pageCache: null,
+  },
+});
+```
 
-// partial config rewrite
+### Function-based Config
+
+You can dynamically generate config:
+
+```ts
 vitePluginCache({
   config: (defaultConfig) => ({
     ...defaultConfig,
-    'cdn-cache': {
-      match: ({ url }) => url.origin.includes('fonts.googleapis.com') || url.origin.includes('fonts.gstatic.com'),
-      strategy: "cache-first",
-      plugins: {
-        expiration: {
-          maxEntries: 30,
-          maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-        },
-      }
-    }
-  })
-})
+    'docs-cache': {
+      match: ({ url }) => url.pathname.startsWith('/docs/'),
+      strategy: 'cache-first',
+    },
+  }),
+});
 ```
 
-### 📦 What This Plugin Does
+---
 
-- Generates vite-plugin-cache-service-worker.js using ts-morph.
+## 🔌 Supported Strategies
 
-- Automatically imports only the strategies and plugins you use.
+| Strategy                 | Description                                           |
+|--------------------------|-------------------------------------------------------|
+| `stale-while-revalidate` | Returns cached response immediately, updates in background |
+| `network-first`          | Tries network first, fallback to cache               |
+| `cache-first`            | Tries cache first, fallback to network               |
+| `network-only`           | Always fetches from network                          |
+| `cache-only`             | Only uses the cache                                  |
 
-- Injects serviceWorker.register(...) into your index.html.
+---
 
-### ✅ Supported Strategies
+## 🧩 Plugin Support
 
-- stale-while-revalidate
+Currently supported:
 
-- network-first
+- `expiration`: Uses `ExpirationPlugin` to limit cache size and entry age.
 
-- cache-first
+```ts
+plugins: {
+  expiration: {
+    maxEntries: 200,
+    maxAgeSeconds: 3600,
+  },
+}
+```
 
-- network-only
+---
 
-- cache-only
+## 📦 Output
 
-### 🧩 Supported Workbox Plugins
+The generated service worker will be placed in your build output (e.g., `dist/vite-plugin-cache-service-worker.js`) and automatically registered in the browser.
 
-- expiration
+---
 
-### 💡 Why Use This?
+## 📝 License
 
-To avoid writing complex Workbox setup by hand — just define caching rules declaratively and let the plugin do the rest.
+MIT
