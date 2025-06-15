@@ -1,23 +1,22 @@
-import { RouteMatchCallback } from "workbox-core/types";
-import { type Route } from "workbox-routing";
-import { type ExpirationPluginOptions } from "workbox-expiration";
-import {
-  type PageCacheOptions,
-  type ImageCacheOptions,
-  type StaticResourceOptions,
-  type GoogleFontCacheOptions,
-  type OfflineFallbackOptions,
+import type { RouteMatchCallback } from "workbox-core";
+import type { Route } from "workbox-routing";
+import type { ExpirationPluginOptions } from "workbox-expiration";
+import type {
+  PageCacheOptions,
+  ImageCacheOptions,
+  StaticResourceOptions,
+  GoogleFontCacheOptions,
+  OfflineFallbackOptions,
 } from "workbox-recipes";
-import { STRATEGY_MAP } from "./consts";
 
-type SerializableMatcher = string | RegExp | RouteMatchCallback | Route;
+import { STRATEGY_MAP } from "./consts";
 
 type PluginDefinition = {
   expiration?: ExpirationPluginOptions;
 };
 
 type CacheConfig = {
-  match: SerializableMatcher;
+  match: string | RegExp | RouteMatchCallback | Route;
   strategy: keyof typeof STRATEGY_MAP;
   plugins?: PluginDefinition;
   networkTimeoutSeconds?: number;
