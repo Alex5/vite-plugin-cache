@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-cache",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "author": "alex5",
   "license": "MIT",
   "repository": "git+https://github.com/Alex5/vite-plugin-cache.git",
@@ -19,7 +19,7 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./sw": "./dist/sw.js"
+    "./workbox-core-types": "./dist/workbox.d.ts"
   },
   "types": "./dist/index.d.ts",
   "files": [

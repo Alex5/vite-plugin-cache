@@ -1,4 +1,8 @@
-import "./_version.js";
+interface ExtendableEventType extends Event {
+  /** [MDN Reference](https://developer.mozilla.org/docs/Web/API/ExtendableEvent/waitUntil) */
+  waitUntil<T>(f: Promise<T>): void;
+}
+
 export interface MapLikeObject {
   [key: string]: any;
 }
@@ -11,7 +15,7 @@ export type PluginState = MapLikeObject;
  * Options passed to a `RouteMatchCallback` function.
  */
 export interface RouteMatchCallbackOptions {
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   request: Request;
   sameOrigin: boolean;
   url: URL;
@@ -34,7 +38,7 @@ export interface RouteMatchCallback {
  * Options passed to a `RouteHandlerCallback` function.
  */
 export declare interface RouteHandlerCallbackOptions {
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   request: Request;
   url: URL;
   params?: string[] | MapLikeObject;
@@ -43,7 +47,7 @@ export declare interface RouteHandlerCallbackOptions {
  * Options passed to a `ManualHandlerCallback` function.
  */
 export interface ManualHandlerCallbackOptions {
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   request: Request | string;
 }
 export type HandlerCallbackOptions =
@@ -88,7 +92,7 @@ export interface RouteHandlerObject {
 export type RouteHandler = RouteHandlerCallback | RouteHandlerObject;
 export interface HandlerWillStartCallbackParam {
   request: Request;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   state?: PluginState;
 }
 export interface HandlerWillStartCallback {
@@ -98,7 +102,7 @@ export interface CacheDidUpdateCallbackParam {
   cacheName: string;
   newResponse: Response;
   request: Request;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   oldResponse?: Response | null;
   state?: PluginState;
 }
@@ -108,7 +112,7 @@ export interface CacheDidUpdateCallback {
 export interface CacheKeyWillBeUsedCallbackParam {
   mode: string;
   request: Request;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   params?: any;
   state?: PluginState;
 }
@@ -118,7 +122,7 @@ export interface CacheKeyWillBeUsedCallback {
 export interface CacheWillUpdateCallbackParam {
   request: Request;
   response: Response;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   state?: PluginState;
 }
 export interface CacheWillUpdateCallback {
@@ -130,7 +134,7 @@ export interface CachedResponseWillBeUsedCallbackParam {
   cacheName: string;
   request: Request;
   cachedResponse?: Response;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   matchOptions?: CacheQueryOptions;
   state?: PluginState;
 }
@@ -143,7 +147,7 @@ export interface FetchDidFailCallbackParam {
   error: Error;
   originalRequest: Request;
   request: Request;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   state?: PluginState;
 }
 export interface FetchDidFailCallback {
@@ -152,7 +156,7 @@ export interface FetchDidFailCallback {
 export interface FetchDidSucceedCallbackParam {
   request: Request;
   response: Response;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   state?: PluginState;
 }
 export interface FetchDidSucceedCallback {
@@ -160,7 +164,7 @@ export interface FetchDidSucceedCallback {
 }
 export interface RequestWillFetchCallbackParam {
   request: Request;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   state?: PluginState;
 }
 export interface RequestWillFetchCallback {
@@ -169,7 +173,7 @@ export interface RequestWillFetchCallback {
 export interface HandlerWillRespondCallbackParam {
   request: Request;
   response: Response;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   state?: PluginState;
 }
 export interface HandlerWillRespondCallback {
@@ -177,7 +181,7 @@ export interface HandlerWillRespondCallback {
 }
 export interface HandlerDidErrorCallbackParam {
   request: Request;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   error: Error;
   state?: PluginState;
 }
@@ -186,7 +190,7 @@ export interface HandlerDidErrorCallback {
 }
 export interface HandlerDidRespondCallbackParam {
   request: Request;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   response?: Response;
   state?: PluginState;
 }
@@ -196,7 +200,7 @@ export interface HandlerDidRespondCallback {
 export interface HandlerDidCompleteCallbackParam {
   request: Request;
   error?: Error;
-  event: ExtendableEvent;
+  event: ExtendableEventType;
   response?: Response;
   state?: PluginState;
 }

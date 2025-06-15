@@ -1,6 +1,6 @@
 import { STRATEGY_MAP } from "./consts";
 
-import { RouteMatchCallback, WorkboxPlugin } from "./workbox-core-types";
+import type { RouteMatchCallback, WorkboxPlugin } from "./workbox-core-types";
 
 type CacheQueryOptions = {
   ignoreSearch?: boolean;
