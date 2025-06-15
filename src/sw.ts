@@ -2,7 +2,6 @@ import { Config, VitePluginCacheConfig } from "./types";
 import { PLUGINS_MAP, STRATEGY_MAP, SW_FILENAME } from "./consts";
 
 import { Project, ScriptKind } from "ts-morph";
-import { pageCache } from "workbox-recipes";
 
 const project = new Project();
 

@@ -1,6 +1,6 @@
 {
   "name": "vite-plugin-cache",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "author": "alex5",
   "license": "MIT",
   "repository": "git+https://github.com/Alex5/vite-plugin-cache.git",
@@ -35,11 +35,7 @@
     "@biomejs/biome": "^1.9.4",
     "@rslib/core": "^0.9.2",
     "@types/node": "^22.15.31",
-    "typescript": "^5.8.3",
-    "workbox-expiration": "^7.3.0",
-    "workbox-recipes": "^7.3.0",
-    "workbox-routing": "^7.3.0",
-    "workbox-strategies": "^7.3.0"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "ts-morph": "^26.0.0",

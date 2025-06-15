@@ -1,4 +1,3 @@
-import { pageCache } from "workbox-recipes";
 import { VitePluginCacheConfig, Config } from "./types";
 
 export const STRATEGY_MAP = {
